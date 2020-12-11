@@ -142,24 +142,24 @@ class WaitingArea {
         } else {
           seats = this.getFirstSeatInLineOfSights(row, col);
         }
-        let emptyAdjacentSeats = seats.filter(
+        let emptySeats = seats.filter(
           ([row, col]) =>
             this.layout[row][col] === Position.EMPTY ||
             this.layout[row][col] === Position.FLOOR
         ).length;
-        let occupiedAdjacentSeats = seats.filter(
+        let occupiedSeats = seats.filter(
           ([row, col]) => this.layout[row][col] === Position.OCCUPIED
         ).length;
 
         if (
           this.layout[row][col] === Position.EMPTY &&
-          emptyAdjacentSeats === seats.length
+          emptySeats === seats.length
         ) {
           layoutCopy[row][col] = Position.OCCUPIED;
           changeCounter++;
         } else if (
           this.layout[row][col] === Position.OCCUPIED &&
-          occupiedAdjacentSeats >= this.tolerance
+          occupiedSeats >= this.tolerance
         ) {
           layoutCopy[row][col] = Position.EMPTY;
           changeCounter++;
@@ -209,9 +209,9 @@ let parts: [string, number][] = [
 
 parts.forEach(([name, tolerance]) => {
   const wa = new WaitingArea(input, tolerance);
-  let change = -1;
-  while (change !== 0) {
+  let change: number;
+  do {
     change = wa.simulateRound();
-  }
+  } while (change !== 0);
   console.log(`${name}: ${wa.getNumberOfOccupiedSeats()}`);
 });
