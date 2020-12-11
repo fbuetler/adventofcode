@@ -35,4 +35,4 @@ console.log(
     counterPerJ.get(1) * counterPerJ.get(3)
   }`
 );
-console.log(`Part1: ${countPerAdapter.get(builtInJ)}`);
+console.log(`Part2: ${countPerAdapter.get(builtInJ)}`);
