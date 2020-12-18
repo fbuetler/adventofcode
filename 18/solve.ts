@@ -79,7 +79,7 @@ function tokenize(str: string): [Token, string][] {
   let curr = "";
   for (let i = 0; i < str.length; i++) {
     curr += str[i].trim();
-    let next = i < str.length - 1 ? str[i + 1].trim() : "";
+    let next = i < str.length - 1 ? str[i + 1].trim() : "-";
     if (curr === "") {
       continue;
     } else if (!isNaN(+curr) && isNaN(+next)) {
@@ -104,30 +104,10 @@ function tokenize(str: string): [Token, string][] {
 }
 
 function parse(tokens: [Token, string][]): Expr {
-  return parseAdd(tokens, 0)[0];
+  return parseBinOp(tokens, 0)[0];
 }
 
-function parseAdd(tokens: [Token, string][], pos: number): [Expr, number] {
-  let left: Expr;
-  let right: Expr;
-  [left, pos] = parseMult(tokens, pos);
-  if (pos >= tokens.length) {
-    return [left, pos];
-  }
-  let [token, value] = tokens[pos];
-  while (token === Token.ADD) {
-    pos++;
-    [right, pos] = parseMult(tokens, pos);
-    left = new BinOp(left, Op.ADD, right);
-    if (pos >= tokens.length) {
-      return [left, pos];
-    }
-    [token, value] = tokens[pos];
-  }
-  return [left, pos];
-}
-
-function parseMult(tokens: [Token, string][], pos: number): [Expr, number] {
+function parseBinOp(tokens: [Token, string][], pos: number): [Expr, number] {
   let left: Expr;
   let right: Expr;
   [left, pos] = parseNumber(tokens, pos);
@@ -135,10 +115,10 @@ function parseMult(tokens: [Token, string][], pos: number): [Expr, number] {
     return [left, pos];
   }
   let [token, value] = tokens[pos];
-  while (token === Token.MULT) {
+  while (token === Token.ADD || token === Token.MULT) {
     pos++;
     [right, pos] = parseNumber(tokens, pos);
-    left = new BinOp(left, Op.MULT, right);
+    left = new BinOp(left, token === Token.ADD ? Op.ADD : Op.MULT, right);
     if (pos >= tokens.length) {
       return [left, pos];
     }
@@ -153,7 +133,7 @@ function parseNumber(tokens: [Token, string][], pos: number): [Expr, number] {
     return [new Num(+value), pos];
   } else if (token === Token.OPEN) {
     let e: Expr;
-    [e, pos] = parseAdd(tokens, pos);
+    [e, pos] = parseBinOp(tokens, pos);
     pos++;
     return [e, pos];
   }
