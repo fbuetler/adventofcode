@@ -20,9 +20,9 @@ function parseRules(rules: string[]): Map<number, Rules> {
       ops.forEach((op, index) =>
         options.push(
           ops[index]
-          .trim()
-          .split(" ")
-          .map((num) => +num)
+            .trim()
+            .split(" ")
+            .map((num) => +num)
         )
       );
       parsed.set(key, [Type.OR, options]);
@@ -95,7 +95,7 @@ function generateMessages(
   return messages;
 }
 
-const input = readFileSync("./example.txt", "utf8").split("\n\n");
+const input = readFileSync("./input.txt", "utf8").split("\n\n");
 const rules = parseRules(input[0].split("\n"));
 const messages = input[1].split("\n");
 
@@ -108,3 +108,47 @@ console.log(
     0
   )}`
 );
+
+/*
+0: 8 11
+8: 42 | 42 8
+11: 42 31 | 42 11 31
+
+Always:
+* only contains 42 and 31
+* has more 42 than 31
+* has at least 2 42
+* has at least 1 31
+
+*/
+let valids = 0;
+const messagesRule31 = subSequenceCache.get(31);
+const messagesRule42 = subSequenceCache.get(42);
+for (let i = 0; i < messages.length; i++) {
+  const parts = new Array<string>();
+  for (let j = 0; j < messages[i].length / 8; j++) {
+    parts.push(messages[i].substr(j * 8, 8));
+  }
+  let fitsRule31 = 0;
+  let fitsRule42 = 0;
+  let fromLeft = 0;
+  while (fromLeft < parts.length && messagesRule42.includes(parts[fromLeft])) {
+    fitsRule42++;
+    fromLeft++;
+  }
+  let fromRight = parts.length - 1;
+  while (fromRight >= 0 && messagesRule31.includes(parts[fromRight])) {
+    fitsRule31++;
+    fromRight--;
+  }
+
+  if (
+    fitsRule42 > 1 &&
+    fitsRule42 > fitsRule31 &&
+    fitsRule31 > 0 &&
+    fitsRule42 + fitsRule31 === parts.length
+  ) {
+    valids++;
+  }
+}
+console.log(`Part 2: ${valids}`);
