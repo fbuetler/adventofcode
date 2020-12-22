@@ -1,13 +1,13 @@
 import { readFileSync } from "fs";
 
-type treeDim = [number, number, number];
+type threeDim = [number, number, number];
 type fourDim = [number, number, number, number];
 
 class Satellite {
-  actives: treeDim[];
+  actives: threeDim[];
 
   constructor(input: string[]) {
-    this.actives = new Array<treeDim>();
+    this.actives = new Array<threeDim>();
     let offset = -Math.floor(input.length / 2);
     for (let row = 0; row < input.length; row++) {
       for (let col = 0; col < input[row].length; col++) {
@@ -19,8 +19,8 @@ class Satellite {
     // console.log(`Before any cycles:\n${this.visualize()}`);
   }
 
-  getNeighbours([x, y, z]: treeDim): treeDim[] {
-    const neighbours = new Array<treeDim>();
+  getNeighbours([x, y, z]: threeDim): threeDim[] {
+    const neighbours = new Array<threeDim>();
     for (let i = -1; i <= 1; i++) {
       for (let j = -1; j <= 1; j++) {
         for (let k = -1; k <= 1; k++) {
@@ -33,16 +33,16 @@ class Satellite {
     return neighbours;
   }
 
-  equal(left: treeDim, right: treeDim): boolean {
+  equal(left: threeDim, right: threeDim): boolean {
     return JSON.stringify(left) === JSON.stringify(right);
   }
 
-  contains(arr: treeDim[], element: treeDim): boolean {
+  contains(arr: threeDim[], element: threeDim): boolean {
     let has = arr.reduce((has, el) => (has ||= this.equal(el, element)), false);
     return has;
   }
 
-  getActives(actives: treeDim[], positions: treeDim[]): number {
+  getActives(actives: threeDim[], positions: threeDim[]): number {
     return positions.reduce(
       (active, pos) => (active += this.contains(actives, pos) ? 1 : 0),
       0
@@ -52,9 +52,9 @@ class Satellite {
   simulate(): number {
     const cycles = 6;
     for (let i = 0; i < cycles; i++) {
-      let newActives = new Array<treeDim>();
-      const checkedPositions = new Array<treeDim>();
-      const positionsToCheck = new Array<treeDim>();
+      let newActives = new Array<threeDim>();
+      const checkedPositions = new Array<threeDim>();
+      const positionsToCheck = new Array<threeDim>();
       positionsToCheck.push([0, 0, 0]);
       while (positionsToCheck.length !== 0) {
         const pos = positionsToCheck.shift();
