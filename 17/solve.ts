@@ -1,120 +1,140 @@
 import { readFileSync } from "fs";
 
-type threeDim = [number, number, number];
-type fourDim = [number, number, number, number];
+type dim = [number, number, number, number];
 
 class Satellite {
-  actives: threeDim[];
+  actives: Set<dim>;
+  rangeXYZ = [-1, 0, 1];
+  rangeW = [0];
 
-  constructor(input: string[]) {
-    this.actives = new Array<threeDim>();
-    let offset = -Math.floor(input.length / 2);
+  constructor(input: string[], fourDim: boolean) {
+    if (fourDim) {
+      this.rangeW = [-1, 0, 1];
+    }
+    this.actives = new Set<dim>();
     for (let row = 0; row < input.length; row++) {
       for (let col = 0; col < input[row].length; col++) {
         if (input[row][col] === "#") {
-          this.actives.push([row + offset, col + offset, 0]);
+          this.actives.add([row, col, 0, 0]);
         }
       }
     }
-    // console.log(`Before any cycles:\n${this.visualize()}`);
+    console.log(`Before any cycles:\n${this.visualize()}\n`);
   }
 
-  getNeighbours([x, y, z]: threeDim): threeDim[] {
-    const neighbours = new Array<threeDim>();
-    for (let i = -1; i <= 1; i++) {
-      for (let j = -1; j <= 1; j++) {
-        for (let k = -1; k <= 1; k++) {
-          if (i !== 0 || j !== 0 || k !== 0) {
-            neighbours.push([x + i, y + j, z + k]);
+  has(set: Set<dim>, elem: dim): boolean {
+    for (let el of Array.from(set)) {
+      if (JSON.stringify(el) === JSON.stringify(elem)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  add(set: Set<dim>, elem: dim) {
+    if (!this.has(set, elem)) {
+      set.add(elem);
+    }
+  }
+
+  addNeighboursOf(set: Set<dim>, [x, y, z, w]: dim) {
+    for (let i of this.rangeXYZ) {
+      for (let j of this.rangeXYZ) {
+        for (let k of this.rangeXYZ) {
+          for (let l of this.rangeW) {
+            if (i !== 0 || j !== 0 || k !== 0 || l !== 0) {
+              this.add(set, [x + i, y + j, z + k, w + l]);
+            }
           }
         }
       }
     }
-    return neighbours;
   }
 
-  equal(left: threeDim, right: threeDim): boolean {
-    return JSON.stringify(left) === JSON.stringify(right);
-  }
-
-  contains(arr: threeDim[], element: threeDim): boolean {
-    let has = arr.reduce((has, el) => (has ||= this.equal(el, element)), false);
-    return has;
-  }
-
-  getActives(actives: threeDim[], positions: threeDim[]): number {
-    return positions.reduce(
-      (active, pos) => (active += this.contains(actives, pos) ? 1 : 0),
-      0
-    );
+  countActiveNeighbours([x, y, z, w]: dim): number {
+    let activeNeighbours = 0;
+    for (let i of this.rangeXYZ) {
+      for (let j of this.rangeXYZ) {
+        for (let k of this.rangeXYZ) {
+          for (let l of this.rangeW) {
+            if (i !== 0 || j !== 0 || k !== 0 || l !== 0) {
+              if (this.has(this.actives, [x + i, y + j, z + k, w + l])) {
+                activeNeighbours++;
+              }
+            }
+          }
+        }
+      }
+    }
+    return activeNeighbours;
   }
 
   simulate(): number {
     const cycles = 6;
     for (let i = 0; i < cycles; i++) {
-      let newActives = new Array<threeDim>();
-      const checkedPositions = new Array<threeDim>();
-      const positionsToCheck = new Array<threeDim>();
-      positionsToCheck.push([0, 0, 0]);
-      while (positionsToCheck.length !== 0) {
-        const pos = positionsToCheck.shift();
-        const neighbours = this.getNeighbours(pos);
-        const activeNeighbours = this.getActives(this.actives, neighbours);
-        if (this.contains(this.actives, pos)) {
+      console.log(`Simulating cycle: ${i + 1}`);
+
+      let positionsToCheck = new Set<dim>();
+      this.actives.forEach((active) =>
+        this.addNeighboursOf(positionsToCheck, active)
+      );
+
+      console.log(`Positions to check: ${positionsToCheck.size}`);
+      let newActives = new Set<dim>();
+      positionsToCheck.forEach((pos) => {
+        const activeNeighbours = this.countActiveNeighbours(pos);
+        // console.log(`pos: ${pos}, actives: ${activeNeighbours}`);
+        if (this.has(this.actives, pos)) {
           if (activeNeighbours === 2 || activeNeighbours === 3) {
-            newActives.push(pos);
+            this.add(newActives, pos);
           }
         } else {
           if (activeNeighbours === 3) {
-            newActives.push(pos);
+            this.add(newActives, pos);
           }
         }
-        checkedPositions.push(pos);
-        neighbours.forEach((el) => {
-          if (
-            !this.contains(positionsToCheck, el) &&
-            !this.contains(checkedPositions, el) &&
-            this.getActives(this.actives, this.getNeighbours(el)) !== 0
-          ) {
-            positionsToCheck.push(el);
-          }
-        });
-      }
+      });
       this.actives = newActives;
-      // console.log(`after ${i + 1} cycles:\n\n${this.visualize()}`);
+      // console.log(`After ${i + 1} cycles:\n\n${this.visualize()}`);
+      console.log(`Active cubes: ${this.actives.size}`);
     }
-    return this.actives.length;
+    return this.actives.size;
   }
 
   visualize(): string {
-    const [minX, maxX] = this.actives.reduce(
+    const [minX, maxX] = Array.from(this.actives).reduce(
       ([min, max], el) => [Math.min(min, el[0]), Math.max(max, el[0])],
       [0, 0]
     );
-    const [minY, maxY] = this.actives.reduce(
+    const [minY, maxY] = Array.from(this.actives).reduce(
       ([min, max], el) => [Math.min(min, el[1]), Math.max(max, el[1])],
       [0, 0]
     );
-    const [minZ, maxZ] = this.actives.reduce(
+    const [minZ, maxZ] = Array.from(this.actives).reduce(
       ([min, max], el) => [Math.min(min, el[2]), Math.max(max, el[2])],
       [0, 0]
     );
-    let str = `[${minX}, ${maxX}], [${minY}, ${maxY}], [${minZ}, ${maxX}]\n`;
-    for (let i = minZ; i <= maxZ; i++) {
-      str += `z=${i}\n`;
-      for (let j = minX; j <= maxX; j++) {
-        for (let k = minY; k <= maxY; k++) {
-          str += this.contains(this.actives, [j, k, i]) ? "#" : ".";
+    const [minW, maxW] = Array.from(this.actives).reduce(
+      ([min, max], el) => [Math.min(min, el[3]), Math.max(max, el[3])],
+      [0, 0]
+    );
+    let str = `[${minX}, ${maxX}], [${minY}, ${maxY}], [${minZ}, ${maxX}], [${minW}, ${maxW}]\n`;
+    for (let l = minW; l <= maxW; l++) {
+      for (let i = minZ; i <= maxZ; i++) {
+        str += `z=${i}, w=${l}\n`;
+        for (let j = minX; j <= maxX; j++) {
+          for (let k = minY; k <= maxY; k++) {
+            str += this.has(this.actives, [j, k, i, l]) ? "#" : ".";
+          }
+          str += "\n";
         }
         str += "\n";
       }
-      str += "\n";
     }
     return str;
   }
 }
 
-const input = readFileSync("./example.txt", "utf8").split("\n");
-
-const s = new Satellite(input);
-console.log(`Part 1: ${s.simulate()}`);
+const input = readFileSync("./input.txt", "utf8").split("\n");
+console.log(`Part 1: ${new Satellite(input, false).simulate()}`);
+console.log(`Part 2: ${new Satellite(input, true).simulate()}`);
