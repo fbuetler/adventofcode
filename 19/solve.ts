@@ -6,7 +6,7 @@ enum Type {
   CHAR = "char",
 }
 
-type Rules = [Type, string | [number[], number[]] | number[]];
+type Rules = [Type, string | number[][] | number[]]; // char - options - sequence
 
 function parseRules(rules: string[]): Map<number, Rules> {
   let parsed = new Map<number, Rules>();
@@ -15,21 +15,17 @@ function parseRules(rules: string[]): Map<number, Rules> {
     let key = +parts[0];
     let value = parts[1].trim();
     if (value.includes("|")) {
-      let options = [new Array<number>(), new Array<number>()];
+      let options = new Array<Array<number>>();
       let ops = value.split("|");
-      options[0].push(
-        ...ops[0]
+      ops.forEach((op, index) =>
+        options.push(
+          ops[index]
           .trim()
           .split(" ")
           .map((num) => +num)
+        )
       );
-      options[1].push(
-        ...ops[1]
-          .trim()
-          .split(" ")
-          .map((num) => +num)
-      );
-      parsed.set(key, [Type.OR, options as [number[], number[]]]);
+      parsed.set(key, [Type.OR, options]);
     } else if (value.includes('"')) {
       parsed.set(key, [Type.CHAR, value.trim().split('"').join("")]);
     } else {
@@ -45,14 +41,25 @@ function parseRules(rules: string[]): Map<number, Rules> {
   return parsed;
 }
 
-function generateMessages(rules: Map<number, Rules>, rule: number): string[] {
+function generateMessages(
+  rules: Map<number, Rules>,
+  rule: number,
+  subSequenceCache: Map<number, string[]>
+): string[] {
+  if (subSequenceCache.has(rule)) {
+    return subSequenceCache.get(rule);
+  }
   const type = rules.get(rule);
   let messages = new Array<string>();
   switch (type[0]) {
     case Type.SEQ: {
       let msgs = [""];
       for (let i = 0; i < type[1].length; i++) {
-        const ends = generateMessages(rules, type[1][i] as number);
+        const ends = generateMessages(
+          rules,
+          type[1][i] as number,
+          subSequenceCache
+        );
         let tmpMsgs = new Array<string>();
         for (let j = 0; j < msgs.length; j++) {
           for (let k = 0; k < ends.length; k++) {
@@ -66,15 +73,16 @@ function generateMessages(rules: Map<number, Rules>, rule: number): string[] {
     }
     case Type.OR: {
       for (let i = 0; i < type[1].length; i++) {
-        if ((type[1][i] as number[]).length === 1) {
-          messages.push(...generateMessages(rules, type[1][i][0]));
-        } else {
-          let leftMsgs = generateMessages(rules, type[1][i][0]);
-          let rightMsgs = generateMessages(rules, type[1][i][1]);
-          leftMsgs.forEach((l) =>
-            rightMsgs.forEach((r) => messages.push(l.concat(r)))
+        let accMsgs = [""];
+        for (let j = 0; j < (type[1][i] as number[]).length; j++) {
+          const tmpMsgs = new Array<string>();
+          const msgs = generateMessages(rules, type[1][i][j], subSequenceCache);
+          accMsgs.forEach((accMsg) =>
+            msgs.forEach((msg) => tmpMsgs.push(accMsg.concat(msg)))
           );
+          accMsgs = tmpMsgs;
         }
+        messages.push(...accMsgs);
       }
       break;
     }
@@ -83,6 +91,7 @@ function generateMessages(rules: Map<number, Rules>, rule: number): string[] {
       break;
     }
   }
+  subSequenceCache.set(rule, messages);
   return messages;
 }
 
@@ -90,7 +99,8 @@ const input = readFileSync("./example.txt", "utf8").split("\n\n");
 const rules = parseRules(input[0].split("\n"));
 const messages = input[1].split("\n");
 
-const allMessages = generateMessages(rules, 0);
+const subSequenceCache = new Map<number, string[]>();
+const allMessages = generateMessages(rules, 0, subSequenceCache);
 
 console.log(
   `Part 1: ${messages.reduce(
