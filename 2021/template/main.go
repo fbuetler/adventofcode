@@ -2,12 +2,25 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"os"
 )
 
 func main() {
+	input := readInput("./input.txt")
+	solveOne(input)
+	solveTwo(input)
+}
 
+func solveOne(input []string) {
+
+	fmt.Printf("Part 1: \n")
+}
+
+func solveTwo(input []string) {
+
+	fmt.Printf("Part 2: \n")
 }
 
 func readInput(fileName string) []string {
