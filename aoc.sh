@@ -23,6 +23,8 @@ Commands:
 get_input() {
     echo "Get input of '$DAY.12.$YEAR'"
 
+    mkdir -p "./$YEAR/$DAY"
+
     curl --silent --cookie "session=$AOC_SESSION" \
         "$URL/$YEAR/day/$DAY/input" |
         sed -z '$ s/\n$//' >"./$YEAR/$DAY/input.txt"
