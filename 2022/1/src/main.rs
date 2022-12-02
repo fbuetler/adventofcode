@@ -1,6 +1,8 @@
 use std::env;
 use std::fs;
 
+// my first rust program ever!
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let file_path = &args[1];
@@ -22,10 +24,8 @@ fn main() {
     cals.sort_by(|a, b| b.cmp(a));
 
     println!(
-        "1st: {}, 2nd: {}, 3rd: {}, sum: {}",
+        "part 1: {}\npart 2: {}",
         cals[0],
-        cals[1],
-        cals[2],
         cals[0] + cals[1] + cals[2]
     )
 }
