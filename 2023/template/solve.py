@@ -1,19 +1,26 @@
 from aocd import submit
 
-def part_a(lines):
+def parse(lines):
+    return
+
+def part_a(input):
     pass
 
-def part_b(lines):
+def part_b(input):
     pass
 
 if __name__ == "__main__":
     with open("input.txt", "r") as f:
         lines = [line.rstrip() for line in f]
 
-    a = part_a(lines)
-    print(a)
-    submit(a, part="a")
+    input = parse(lines)
 
-    b = part_b(lines)
-    print(b)
-    submit(b,  part="b")
+    a = part_a(input)
+    if a:
+        print(a)
+        submit(a, part="a")
+
+    b = part_b(input)
+    if b:
+        print(b)
+        submit(b,  part="b")
