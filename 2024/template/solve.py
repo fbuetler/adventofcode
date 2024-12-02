@@ -1,5 +1,6 @@
 from aocd import submit
 
+
 def parse(lines):
     return
 
