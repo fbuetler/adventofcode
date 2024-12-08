@@ -4,3 +4,5 @@ token
 target
 .venv
 input.txt
+*example*.txt
+
