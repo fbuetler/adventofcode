@@ -63,17 +63,16 @@ def is_looping(map, pos):
     n = len(map)
     m = len(map[0])
     facing = 0
-    visited = list()
+    visited = set()
     while True:
-        if (pos, facing) in visited:
-            return True
-        else:
-            visited.append((pos, facing))
-
         if leaving(pos, n, m, facing):
             return False
         if is_blocked(map, pos, facing):
             facing = turn_right(facing)
+            if pos in visited:
+                return True
+            else:
+                visited.add(pos)
         else:
             pos = step(pos, facing)
 
