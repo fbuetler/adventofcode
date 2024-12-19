@@ -1,7 +1,7 @@
 import re
-from copy import deepcopy
 
 from aocd import submit
+from z3 import BitVec, Solver, sat
 
 
 def parse(lines):
@@ -16,26 +16,16 @@ def parse(lines):
         m = re.match(program_pattern, line)
         if m:
             program = list(map(int, m.group(1).split(",")))
-    return registers, program
-
-
-A = "A"
-B = "B"
-C = "C"
+    return registers["A"], registers["B"], registers["C"], program
 
 
 def part_a(input):
-    regs, program = input
-    regs = deepcopy(regs)
-    print(regs)
-    return calculate(regs, program)
+    a, b, c, program = input
+    output = calculate(a, b, c, program)
+    return ",".join(list(map(str, output)))
 
 
-def part_b(input):
-    regs, program = input
-
-
-def calculate(regs, program):
+def calculate(a, b, c, program):
     i = 0
     output = list()
     while i < len(program):
@@ -45,55 +35,87 @@ def calculate(regs, program):
         instr = program[i]
         op = program[i+1]
 
-        if instr == 3:
-            if regs[A] != 0:
+        # print(f"{instr} {op} - {a} {b} {c}")
+
+        if instr == 3:  # jnz
+            if a != 0:
                 i = op
                 continue
-
-        elif instr == 2:
-            regs[B] = combo(regs, op) % 8
-
-        elif instr == 1:
-            regs[B] = regs[B] ^ op
-        elif instr == 4:
-            regs[B] = regs[B] ^ regs[C]
-
-        elif instr == 0:
-            n = regs[A]
-            d = 2 ** combo(regs, op)
-            regs[A] = n // d
-        elif instr == 6:
-            n = regs[A]
-            d = 2 ** combo(regs, op)
-            regs[B] = n // d
-        elif instr == 7:
-            n = regs[A]
-            d = 2 ** combo(regs, op)
-            regs[C] = n // d
-
-        elif instr == 5:
-            n = combo(regs, op)
+        elif instr == 2:  # bst
+            b = combo(a, b, c, op) % 8
+        elif instr == 1:  # bxl
+            b ^= op
+        elif instr == 4:  # bxc
+            b ^= c
+        elif instr == 0:  # adv
+            d = 2 ** combo(a, b, c, op)
+            a //= d
+        elif instr == 6:  # bdv
+            d = 2 ** combo(a, b, c, op)
+            b = a // d
+        elif instr == 7:  # cdv
+            d = 2 ** combo(a, b, c, op)
+            c = a // d
+        elif instr == 5:  # out
+            n = combo(a, b, c, op)
             output.append(n % 8)
-
         else:
             raise ValueError("invalid instr")
 
         i += 2
 
-    s = ",".join(list(map(str, output)))
-    return s
+    return output
 
 
-def combo(regs, op):
+def combo(a, b, c, op):
     if 0 <= op and op <= 3:
         return op
     elif op == 4:
-        return regs[A]
+        return a
     elif op == 5:
-        return regs[B]
+        return b
     elif op == 6:
-        return regs[C]
+        return c
     raise ValueError("invalid combo")
+
+
+"""
+the program ends with 0, 3 i.e. jumping back to the start of the program, until a == 0
+the following (instr, op) pairs are executed repeatedly
+2 4 # bst a
+1 7 # bxl 7
+7 5 # cdv b
+0 3 # adv 3
+1 7 # bxl 7
+4 1 # bxc 1
+5 5 # out b
+3 0 # jnz 0
+translating into logic formulas give the loop below
+"""
+
+
+def part_b(input):
+    a, b, c, program = input
+
+    a = BitVec("A", 64)
+    constraints = list()
+    for p in program:
+        b = a % 8
+        b ^= 7
+        c = a >> b
+        a >>= 3
+        b ^= 7
+        b ^= c
+        constraints.append(b % 8 == p)
+
+    constraints.append(a == 0)
+
+    s = Solver()
+    s.add(constraints)
+    assert s.check() == sat
+    m = s.model()
+    for v in m:
+        return m[v].as_long()
 
 
 if __name__ == "__main__":
