@@ -23,8 +23,6 @@ def part_a(input):
     state, eqs = input
     adj = to_adj(eqs)
     order = topo_sort(adj)
-    print(order)
-
     n = calc(eqs, state, order)
     return n
 
@@ -65,8 +63,6 @@ def topo_sort_rec(adj: Dict, v, visited: Dict, stack: List):
 def calc(eqs, state, order):
     for c in order:
         a, op, b = eqs[c]
-        # print(a, op, b, c)
-        # print(state[a], state[b])
         if op == "AND":
             state[c] = state[a] and state[b]
         elif op == "OR":
@@ -75,8 +71,6 @@ def calc(eqs, state, order):
             state[c] = state[a] != state[b]
         else:
             raise ValueError("invalid op")
-    #     print(state[c])
-    # print(state)
 
     n = 0
     i = 0
@@ -90,8 +84,44 @@ def calc(eqs, state, order):
 
 def part_b(input):
     state, eqs = input
-    adj = to_adj(eqs)
-    order = topo_sort(adj)
+
+    def is_input(v):
+        return v.startswith("x") or v.startswith("y")
+
+    def is_output(v):
+        return v.startswith("z")
+
+    def is_initial(v):
+        return v == "x00" or v == "y00"
+
+    def is_final(v):
+        return v == "z45"
+
+    swaps = set()
+    for c, (a, op, b) in eqs.items():
+        if op != "XOR" and is_output(c) and not is_final(c):
+            swaps.add(c)
+
+        if op == "AND" and not (is_initial(a) or is_initial(b)):
+            for c1, (a1, op1, b1) in eqs.items():
+                if (a1 == c or b1 == c) and op1 != "OR":
+                    swaps.add(c)
+
+        if (
+            op == "XOR"
+            and not (is_input(a) or is_output(a))
+            and not (is_input(b) or is_output(b))
+            and not (is_input(c) or is_output(c))
+        ):
+            swaps.add(c)
+
+        if op == "XOR":
+            for c1, (a1, op1, b1) in eqs.items():
+                if (a1 == c or b1 == c) and op1 == "OR":
+                    swaps.add(c)
+
+    s = ",".join(sorted(list(swaps)))
+    return s
 
 
 if __name__ == "__main__":
